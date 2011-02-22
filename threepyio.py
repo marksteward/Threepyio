@@ -6,9 +6,6 @@ from messaging.sms import SmsDeliver
 class ATException(IOError):
     pass
 
-class SMS:
-    pass
-
 class Dongle:
     def __init__(self, port, callbacks={}):
         self.port = port
@@ -77,41 +74,6 @@ class Dongle:
 
         self.callbacks[cbname] = cb
 
-    """
-    def getNumber(self, x):
-        n = '0123456789*#abc '
-        r = [n[b & 0xf] + n[b >> 4 & 0xf] for b in x]
-        return ''.join(r).rstrip(' ')
-
-    def decodepdu(self, pdu):
-        sms = SMS()
-        import pdb;pdb.set_trace()
-        pdu = map(ord, pdu.decode('hex'))
-        # SCA
-        sclen = pdu.pop(0)
-        sms.smsctype = pdu[0]
-        sms.smsc = self.getNumber(pdu[1:sclen])
-        pdu = pdu[sclen:]
-
-        # TPDU
-        sms.msgtype = pdu.pop(0)
-        #sms.msgid = pdu.pop(0)
-
-        dalen = pdu.pop(0)
-        sms.sendertype = pdu[0]
-        sms.sender = self.getNumber(pdu[1:dalen])
-        pdu = pdu[senderlen:]
-
-        sms.protocol = pdu.pop(0)
-        sms.encoding = pdu.pop(0)
-        sms.timestamp = pdu[:7]
-        pdu = pdu[7:]
-
-        datalen = pdu.pop(0)
-        sms.data = self.getNibbles(pdu[:datalen])
-        return sms
-    """
-
     def handleBOOT(self, line):
         return
 
@@ -127,6 +89,7 @@ class Dongle:
             raise ATException('Unknown memory type')
         index = int(index)
         msg = self.readSMS(index)
+        self.deleteSMS(index)
         self.callbacks['message'](msg)
 
     def handleCDSI(self, line):
@@ -155,6 +118,18 @@ class Dongle:
         sms = SmsDeliver(pdu)
         return sms
 
+    def deleteSMS(self, index):
+        self.send('+CMGD=%s' % index)
+        line = self.recv()
+        if line.startswith('+CMS ERROR:'):
+            a, b, err = line.partition('+CMS ERROR:')
+            raise ATException('Unable to delete SMS: ' + err)
+
+        if line != 'OK':
+            raise ATException('OK for AT+CMGD not received')
+
+
+
     def loop(self):
         while True:
             line = self.recv()
@@ -167,7 +142,8 @@ class Dongle:
                 self.handleCMTI(c)
 
             elif line.startswith('+CDSI'):
-                self.handleCDSI(line)
+                a, b, c = line.partition('+CDSI: ')
+                self.handleCDSI(c)
 
             else:
                 print 'Ignoring unhandled notification'
@@ -180,13 +156,13 @@ def ircsay(msg):
     s.send(msg)
     s.close()
 
-
 def recvMessage(sms):
     print 'Received SMS:'
     print sms.number
     print sms.date
     print sms.text
     ircsay('From %s: %s' % (sms.number, sms.text))
+    
 
 #while True:
 if True:
@@ -200,5 +176,6 @@ if True:
     try:
         d.loop()
     except serial.SerialException, e:
+        print repr(e)
         pass
 
