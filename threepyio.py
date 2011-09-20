@@ -66,7 +66,7 @@ class Dongle:
                 # <bm>   2: not used
                 # WRONG ZOMG # <ds>   1: forward delivery report to terminal
                 # <bfr>  0: don't clear buffered messages/delivery reports
-                self.send('+CNMI=2,1,2,2,0')
+                self.send('+CNMI=2,1,0,2,0')
                 if self.recv() != 'OK':
                     raise ATException('AT+CNMI failed')
         else:
