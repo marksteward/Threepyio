@@ -10,7 +10,7 @@ class Dongle:
     def __init__(self, port, callbacks={}):
         self.port = port
         self.speed = 115200
-        self.timeout = None
+        self.timeout = 5
         self.callbacks = callbacks
         self.connected = False
 
@@ -25,6 +25,9 @@ class Dongle:
     def recv(self):
         while True:
             s = self.s.readline()
+            if not s:
+                raise EOFError('readline() returned nothing')
+
             print 'recv %s' % repr(s)
             s = s.rstrip('\r\n') # Dongle returns what we send followed by \r\n
 
@@ -175,7 +178,7 @@ if True:
     d.connect()
     try:
         d.loop()
-    except serial.SerialException, e:
+    except (serial.SerialException, EOFError) e:
         print repr(e)
-        pass
+        raise
 
