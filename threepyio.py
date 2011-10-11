@@ -178,7 +178,7 @@ if True:
     d.connect()
     try:
         d.loop()
-    except (serial.SerialException, EOFError) e:
+    except (serial.SerialException, EOFError), e:
         print repr(e)
         raise
 
