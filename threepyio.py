@@ -1,16 +1,19 @@
 #!/usr/bin/env python
-
-import serial, socket, sys, socket
+import serial
+import socket
+import sys
 from messaging.sms import SmsDeliver
 
 class ATException(IOError):
     pass
 
 class Dongle:
-    def __init__(self, port, callbacks={}):
+    def __init__(self, port, callbacks=None):
         self.port = port
         self.speed = 115200
         self.timeout = 5
+        if callbacks is None:
+            callbacks = {}
         self.callbacks = callbacks
         self.connected = False
 
@@ -58,7 +61,7 @@ class Dongle:
         for cbname, cb in self.callbacks.items():
             if cb:
                 self.sethandler(cbname, cb)
- 
+
     def sethandler(self, cbname, cb):
         if cbname == 'message':
             if self.connected:
@@ -96,7 +99,7 @@ class Dongle:
         self.callbacks['message'](msg)
 
     def handleCDSI(self, line):
-        mem, index = text.split(',')
+        mem, index = line.split(',')
         if mem != 'SM':
             raise ATException('Unknown memory type')
         index = int(index)
@@ -136,7 +139,7 @@ class Dongle:
     def loop(self):
         while True:
             line = self.recv()
-            
+
             if line == '':
                 continue
 
@@ -165,7 +168,7 @@ def recvMessage(sms):
     print sms.date
     print sms.text
     ircsay('From %s: %s' % (sms.number, sms.text))
-    
+
 
 #while True:
 if True:
